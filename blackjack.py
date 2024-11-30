@@ -6,16 +6,18 @@ class Card:
         self.value = value
         
     def __str__(self):
-        return f"{self.value} of {self.suit}"
+        if self.suit == "Spades":
+            suit = "♠"
+        elif self.suit == "Hearts":
+            suit = "♥"
+        elif self.suit == "Clubs":
+            suit = "♣"
+        else:
+            suit = "♦"
+        return f"{self.value}{suit}"
     
     def __repr__(self):
         return f"Card(suit={self.suit}, value={self.value})"
-        
-    def __eq__(self, other):
-        return self.suit == other.suit and self.value == other.value
-    
-    def __hash__(self):
-        return hash((self.suit, self.value))
     
 class Deck:
     """
@@ -26,10 +28,11 @@ class Deck:
         """
         Creates a deck of 52 cards, 4 suits from 2 to Ace
         """
-        deck = set()
+        deck = []
         for suit in ["Spades", "Hearts", "Clubs", "Diamonds"]:
-            for value in [2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10, 11]:
-                deck.add(Card(suit, value))
+            # For 10's for 10, J, Q, and K. Ace initally assumed to be 11
+            for value in [2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10, 11]: 
+                deck.append(Card(suit, value))
         return deck
     
     def __init__(self, cards=default_deck()):
@@ -41,6 +44,8 @@ class Deck:
         self.num_cards -= 1
         
     def draw_card(self):
+        if not self.cards:
+            raise ValueError("No more cards in the deck!")
         selected_card = random.choice(list(self.cards))
         self.remove_card(selected_card)
         return selected_card
@@ -61,8 +66,17 @@ class Hand:
     
     def value(self):
         total = 0
+        aces = []
         for card in self.cards:
+            if card.value == 11:  # Assume Ace is initially 11
+                aces.append(card)
             total += card.value
+        # Adjust for Aces to prevent busting
+        while total > 21 and len(aces) > 0:
+            aces[0].value = 1
+            total -= 10  # Treat an Ace as 1 instead of 11
+            aces = aces[1:]
+
         return total
         
     def is_bust(self):
@@ -76,6 +90,12 @@ class Hand:
     
     def can_split(self):
         return not self.is_stood and len(self.cards) == 2 and self.cards[0].value == self.cards[1].value
+    
+    def has_soft_17(self):
+        return self.value() == 17 and 11 in [c.value for c in self.cards]
+    
+    def is_blackjack(self):
+        return len(self.cards) == 2 and self.value() == 21
     
     def __str__(self):
         result = ""
@@ -104,6 +124,21 @@ class Game:
         self.player_hands = [player_hand]
         self.dealer_hand = dealer_hand
         
+        # Check for immediate Blackjacks
+        if player_hand.is_blackjack():
+            if dealer_hand.is_blackjack():
+                print("Both you and the dealer have a Blackjack! It's a tie.")
+                self.reward = player_hand.bet_amount  # Bet is returned
+            else:
+                print("You have a Blackjack! You win 3:2.")
+                self.reward = player_hand.bet_amount * 2.5  # Reward 3:2
+            self.game_over = True
+        elif dealer_hand.is_blackjack():
+            print("The dealer has a Blackjack. You lose.")
+            self.reward = 0
+            self.game_over = True
+        else:
+            self.game_over = False
     
     def make_action(self, hand: Hand, action: str) -> bool:
         """
@@ -135,7 +170,7 @@ class Game:
                 return False
         elif action == "split":
             if hand.can_split():
-                new_hand = Hand([hand.cards[0]], self.bet_amount)
+                new_hand = Hand([hand.cards[0]], hand.bet_amount)
                 hand.cards = [hand.cards[1]]
                 self.player_hands.append(new_hand)
                 return True
@@ -150,47 +185,46 @@ class Game:
                 if not hand.is_bust():
                     total_reward += 2 * hand.bet_amount
             return total_reward
+        
         dealer_value = self.dealer_hand.value()
         for hand in self.player_hands:
-            if hand.value() > dealer_value:
+            if not hand.is_bust() and hand.value() > dealer_value:
                 total_reward += 2 * hand.bet_amount
             elif hand.value() == dealer_value:
                 total_reward += hand.bet_amount
+                
         return total_reward
             
     def play_game(self) -> int:
+        if self.game_over:
+            return self.reward
+    
         # Let player make actions until no more actions remaining
-        while True:
-            available_hands = []
-            for hand in self.player_hands:
-                if not hand.is_stood and not hand.is_bust():
-                    available_hands.append(hand)
-            if len(available_hands) == 0:
-                break
-            for hand in available_hands:
-                success = False
-                while not success:
-                    print(f"The dealer is showing this card: {self.dealer_hand.cards[0]}")
-                    action = input(f"Make an action for this hand: {hand} ").lower()
-                    success = self.make_action(hand, action)
+        for hand in self.player_hands:
+            while not hand.is_stood and not hand.is_bust():
+                print(f"The dealer is showing this card: {self.dealer_hand.cards[0]}")
+                action = input(f"Make an action for this hand: {hand} ").lower()
+                self.make_action(hand, action)
+                print(f"The hand is now: {hand}")
+                
         print("Your final hands are:")
         for hand in self.player_hands:
             print(hand)
-        # Let dealer make action
+            
         dealer = self.dealer_hand
         while not dealer.is_stood and not dealer.is_bust():
-            # Implement dealer strategy, always hit below 17, otherwise stand
-            if dealer.value() < 17:
+            if dealer.value() < 17 or dealer.has_soft_17():
                 self.make_action(dealer, "hit")
             else:
                 self.make_action(dealer, "stand")
+                
         print(f"The dealer ended with this hand: {dealer}")
-        reward = self.get_reward()
-        return reward
+        self.reward = self.get_reward()
+        return self.reward
     
 if __name__ == "__main__":
     deck = Deck()
     bet_amount = float(input("Enter how much you want to bet? "))
     game = Game(deck, bet_amount)
-    reward = game.play_game()
-    print(f"You won {reward}. Yippee! (or not yippee)")
+    game.play_game()
+    print(f"You won {game.reward}. Yippee! (or not yippee)")
