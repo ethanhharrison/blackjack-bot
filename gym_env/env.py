@@ -85,14 +85,16 @@ class Blackjack(Env):
         self.terminated = True
         player_sum, _ = self._get_hand_value(self.player_hand)
         dealer_sum, _ = self._get_hand_value(self.dealer_hand)
-        if player_sum == 21 and len(self.player_hand) == 2:
-            self.reward = 2.5 * self.bet
+        if player_sum == 21 and len(self.player_hand) == 2: 
+            self.reward = 1.5 * self.bet # Blackjack
+        elif player_sum > 21:
+            self.reward -= self.bet # Player busted
         elif dealer_sum > 21:
-            self.reward = 2 * self.bet
+            self.reward = self.bet # Dealer busted
         elif player_sum > dealer_sum:
-            self.reward = 2 * self.bet
+            self.reward = self.bet # Player won
         elif player_sum == dealer_sum:
-            self.reward = self.bet
+            self.reward = 0 # Player shoved
             
     def _process_action(self, action):
         """Process the action by the player."""
@@ -101,6 +103,7 @@ class Blackjack(Env):
             self.can_move = False
         elif action == Action.DOUBLE:
             self.player_hand.append(self._draw_card())
+            self.bet *= 2
             self.can_move = False
             self._process_dealer()
         elif action == Action.HIT:
@@ -202,9 +205,9 @@ if __name__ == "__main__":
     print("Your Hand:", bj.player_hand)
     print("Dealer's Hand:", bj.dealer_hand) 
         
-    if bj.reward > 1:
+    if bj.reward > 0:
         print(f"You won {bj.reward}!")
-    elif bj.reward == 1:
+    elif bj.reward == 0:
         print("You shoved")
     else:
-        print("You lost :(")
+        print(f"You lost {bj.reward} :(")
