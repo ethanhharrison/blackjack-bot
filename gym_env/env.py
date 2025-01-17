@@ -4,6 +4,7 @@ import numpy as np
 from gym import Env
 from gym.spaces import Discrete, Tuple
 from enums import Action
+from rendering import BlackjackWindow
 
 
 class Blackjack(Env):
@@ -28,6 +29,7 @@ class Blackjack(Env):
         self.reward = None
         self.terminated = None
         self.can_move = None
+        self.screen = None
         self.illegal_move_reward = -1
         
         # Gym API
@@ -93,8 +95,10 @@ class Blackjack(Env):
             self.reward = self.bet # Dealer busted
         elif player_sum > dealer_sum:
             self.reward = self.bet # Player won
+        elif player_sum < dealer_sum:
+            self.reward -= self.bet # Dealer won
         elif player_sum == dealer_sum:
-            self.reward = 0 # Player shoved
+            self.reward = 0 # Shove
             
     def _process_action(self, action):
         """Process the action by the player."""
@@ -125,7 +129,8 @@ class Blackjack(Env):
             self.legal_moves.append(Action.DOUBLE)
             
     def _illegal_move(self, action):
-        self.reward = self.illegal_move_reward
+        pass
+        # self.reward = self.illegal_move_reward
             
     def _get_observation(self):
         """Observe the environment"""
@@ -183,25 +188,57 @@ class Blackjack(Env):
         
     def render(self):
         """Renders the game"""
-        pass
+        if self.render_mode == "human":
+            self._render_human()
+        
+        self.screen.update()
+    
+    def _render_human(self):
+        """Renders the game"""
+        screen_width = 600
+        screen_height = 400
+        
+        if self.screen is None:
+            self.screen = BlackjackWindow(screen_width + 50, screen_height + 50)
+        self.screen.reset()
+        
+        # Dealer's cards
+        x, y = 250, 100
+        for c in self.dealer_hand[:-1]:
+            self.screen.card(x, y, c)
+            x += 100
+        if self.can_move:
+            self.screen.card(x, y, "HIDDEN")
+        else:
+            self.screen.card(x, y, self.dealer_hand[-1])
+        
+        # Player's cards
+        x, y = 250, 300
+        for c in self.player_hand:
+            self.screen.card(x, y, c)
+            x += 100
     
     def close(self):
         """Closes the environment. Used to stop any rendering"""
         pass
     
 if __name__ == "__main__":
-    bj = Blackjack()
+    # User play
+    bj = Blackjack(render_mode="human")
     bj.reset()
-    
                 
     print("Dealer's Card:", bj.dealer_hand[0])
     
+    bj.render()
+    
     while not bj.terminated:
+        bj.render()
         print("Your Hand:", bj.player_hand)
         print("0 = STAY, 1 = HIT, 2 = DOUBLE")
         act = input("Make your move: ")
         bj.step(int(act))
        
+    bj.render()
     print("Your Hand:", bj.player_hand)
     print("Dealer's Hand:", bj.dealer_hand) 
         
@@ -211,3 +248,4 @@ if __name__ == "__main__":
         print("You shoved")
     else:
         print(f"You lost {bj.reward} :(")
+    input()
