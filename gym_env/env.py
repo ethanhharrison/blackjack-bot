@@ -6,11 +6,13 @@ from gym.spaces import Discrete, Tuple
 from enums import Action
 from rendering import BlackjackWindow
 
+log = logging.getLogger(__name__)
+logging.basicConfig(filename='log/env.log', level=logging.INFO)
 
 class Blackjack(Env):
     """Blackjack Environment"""
     
-    def __init__(self, num_decks=1, bet=1, render_mode=None):
+    def __init__(self, num_decks=1, render_mode=None):
         """
         Only need to initialize the game once in the beginning
 
@@ -20,7 +22,7 @@ class Blackjack(Env):
             render_mode (bool, optional): How to render the game. If None, do not render 
         """
         self.num_decks = num_decks
-        self.bet = bet
+        self.bet = None
         self.observation = None
         self.deck = None
         self.player_hand = None
@@ -37,15 +39,26 @@ class Blackjack(Env):
         self.action_space = Discrete(len(Action))
         self.observation_space = Tuple((Discrete(32), Discrete(11), Discrete(2))) # Player's score, dealer's card, usable ace
     
-    def reset(self):
+    def reset(self, seed=None):
         """Resets the game. Creates a new environment and returns the agent's observation"""
+        log.info("")
+        log.info("==================")
+        log.info("Starting new game.")
+        log.info("==================")
+        
         self.reward = 0
+        self.bet = 1
         self.observation = None
         self.terminated = None
         self.can_move = True
         self._create_deck()
         self._deal_cards()
         self._get_observation()
+        
+        log.info(f"Player hand: {self.player_hand}, "
+                 f"Dealer Show Card: {self.dealer_hand[0]}, ",
+                 f"Dealer Hand: {self.dealer_hand}")
+        
         return self.observation
     
     def step(self, action):
@@ -62,8 +75,14 @@ class Blackjack(Env):
             else:
                 self._process_action(Action(action))
                 self._get_observation()
+                
+        log.info(f"Player: {Action(action)} - Player hand: {self.player_hand}")
+        log.info(f"Dealer Show Card: {self.dealer_hand[0]}")
+        log.info(f"Dealer Hand: {self.dealer_hand}")        
+        
         self._check_game_over()
-        return self.observation
+        
+        return self.observation, self.reward, self.terminated
     
     def _check_game_over(self):
         """Check if player/dealer has blackjack or busted"""
@@ -84,21 +103,26 @@ class Blackjack(Env):
     
     def _game_over(self):
         """End of a game. Calculates the reward."""
+        
         self.terminated = True
         player_sum, _ = self._get_hand_value(self.player_hand)
         dealer_sum, _ = self._get_hand_value(self.dealer_hand)
         if player_sum == 21 and len(self.player_hand) == 2: 
             self.reward = 1.5 * self.bet # Blackjack
         elif player_sum > 21:
-            self.reward -= self.bet # Player busted
+            self.reward = -self.bet # Player busted
         elif dealer_sum > 21:
             self.reward = self.bet # Dealer busted
         elif player_sum > dealer_sum:
             self.reward = self.bet # Player won
         elif player_sum < dealer_sum:
-            self.reward -= self.bet # Dealer won
+            self.reward = -self.bet # Dealer won
         elif player_sum == dealer_sum:
             self.reward = 0 # Shove
+            
+        log.info("Game over.")
+        log.info(f"Player sum: {player_sum}, Dealer sum: {dealer_sum}")
+        log.info(f"Player received reward {self.reward}")
             
     def _process_action(self, action):
         """Process the action by the player."""
@@ -129,7 +153,7 @@ class Blackjack(Env):
             self.legal_moves.append(Action.DOUBLE)
             
     def _illegal_move(self, action):
-        pass
+        log.warning(f"{action} is an illegal move, try again. Currently allowed: {self.legal_moves}")
         # self.reward = self.illegal_move_reward
             
     def _get_observation(self):
@@ -202,17 +226,23 @@ class Blackjack(Env):
             self.screen = BlackjackWindow(screen_width + 50, screen_height + 50)
         self.screen.reset()
         
+        player_sum, dealer_card, _ = self.observation
+        
         # Dealer's cards
         x, y = 250, 100
         for c in self.dealer_hand[:-1]:
             self.screen.card(x, y, c)
             x += 100
-        if self.can_move:
+        if not self.terminated:
+            self.screen.text(f"Dealer Card: {dealer_card}", 300, 40)
             self.screen.card(x, y, "HIDDEN")
         else:
+            dealer_sum, _ = self._get_hand_value(self.dealer_hand)
+            self.screen.text(f"Dealer Sum: {dealer_sum}", 300, 40)
             self.screen.card(x, y, self.dealer_hand[-1])
         
         # Player's cards
+        self.screen.text(f"Player Sum: {player_sum}", 300, 240)
         x, y = 250, 300
         for c in self.player_hand:
             self.screen.card(x, y, c)
@@ -225,27 +255,31 @@ class Blackjack(Env):
 if __name__ == "__main__":
     # User play
     bj = Blackjack(render_mode="human")
-    bj.reset()
-                
-    print("Dealer's Card:", bj.dealer_hand[0])
     
-    bj.render()
-    
-    while not bj.terminated:
+    while True:
+        bj.reset()
+        
+        print("Dealer's Card:", bj.dealer_hand[0])
+        
+        bj.render()
+        
+        while not bj.terminated:
+            bj.render()
+            print("Your Hand:", bj.player_hand)
+            print("0 = STAY, 1 = HIT, 2 = DOUBLE")
+            act = input("Make your move: ")
+            bj.step(int(act))
+        
         bj.render()
         print("Your Hand:", bj.player_hand)
-        print("0 = STAY, 1 = HIT, 2 = DOUBLE")
-        act = input("Make your move: ")
-        bj.step(int(act))
-       
-    bj.render()
-    print("Your Hand:", bj.player_hand)
-    print("Dealer's Hand:", bj.dealer_hand) 
-        
-    if bj.reward > 0:
-        print(f"You won {bj.reward}!")
-    elif bj.reward == 0:
-        print("You shoved")
-    else:
-        print(f"You lost {bj.reward} :(")
-    input()
+        print("Dealer's Hand:", bj.dealer_hand) 
+            
+        if bj.reward > 0:
+            print(f"You won {bj.reward}!")
+        elif bj.reward == 0:
+            print("You shoved")
+        else:
+            print(f"You lost {bj.reward} :(")
+        quit = input("Type 'QUIT' to exit the game. Press ENTER to play again.")
+        if quit:
+            break
