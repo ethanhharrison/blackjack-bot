@@ -1,0 +1,20 @@
+Metadata-Version: 2.2
+Name: blackjack-bot
+Version: 0.1.0
+Summary: A custom Blackjack environment for OpenAI Gym.
+Home-page: https://github.com/ethanhharrison/blackjack-bot
+Author: E Harrison
+Author-email: ehharrison@berkeley.edu
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.7
+Requires-Dist: gym>=0.21
+Requires-Dist: numpy
+Dynamic: author
+Dynamic: author-email
+Dynamic: classifier
+Dynamic: home-page
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary

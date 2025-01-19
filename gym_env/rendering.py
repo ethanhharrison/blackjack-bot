@@ -1,11 +1,4 @@
-import numpy as np
 import pyglet
-
-"""
-Code mostly by Nicolas Dickreuter from neuron_poker repo
-
-Link: https://github.com/dickreuter/neuron_poker/blob/master/gym_env/rendering.py 
-"""
 
 class BlackjackWindow:
     """Class for rendering"""
