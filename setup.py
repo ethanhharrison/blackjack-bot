@@ -11,6 +11,7 @@ setup(
     install_requires=[
         "gym>=0.21",
         "numpy",
+        "matplotlib"
     ],
     classifiers=[
         "Programming Language :: Python :: 3",

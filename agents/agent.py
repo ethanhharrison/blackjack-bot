@@ -1,5 +1,7 @@
 """Base Class for a Blackjack Agent"""
 
+import matplotlib.pyplot as plt
+
 class Agent:
     
     def __init__(self, name, env):
@@ -31,7 +33,16 @@ class Agent:
             
     def get_metrics(self):
         """Shows the metrics of the agent's performance."""
-        pass
+        running_totals = [0]
+        for reward in self.rewards:
+            running_totals.append(running_totals[-1] + reward)
+            
+        plt.plot(running_totals)
+        plt.xlabel("Episode")
+        plt.ylabel("Running Total")
+        plt.title(f"Running Total For {self.name} Agent")
+
+        plt.savefig(f"results/{self.name}_agent_running_total.png")
             
                 
     
