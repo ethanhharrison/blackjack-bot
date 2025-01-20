@@ -2,7 +2,7 @@ import logging
 import numpy as np
 
 from gym import Env
-from gym.spaces import Discrete, Tuple
+from gym.spaces import Discrete, Box
 from gym_env.enums import Action
 from gym_env.rendering import BlackjackWindow
 
@@ -38,7 +38,11 @@ class Blackjack(Env):
         # Gym API
         self.render_mode = render_mode
         self.action_space = Discrete(len(Action))
-        self.observation_space = Tuple((Discrete(32), Discrete(11), Discrete(2))) # Player's score, dealer's card, usable ace
+        self.observation_space = Box(
+            low=np.array([0, 0, 0]),
+            high=np.array([31, 10, 1]),
+            dtype=np.float32
+        ) # Player's score, dealer's card, usable ace
     
     def reset(self, seed=None, options=None):
         """Resets the game. Creates a new environment and returns the agent's observation"""
@@ -172,7 +176,7 @@ class Blackjack(Env):
         dealer_value = self._get_card_value(dealer_card)
         
         self._get_legal_moves()
-        self.observation = (player_sum, dealer_value, usable_ace)
+        self.observation = np.array([player_sum, dealer_value, usable_ace], dtype=np.float32)
         
     def _get_card_value(self, card):
         """Get the value of the card"""
