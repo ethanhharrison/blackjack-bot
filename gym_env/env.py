@@ -13,7 +13,7 @@ class Blackjack(Env):
     """Blackjack Environment"""
     metadata = {"render_modes": ["human"], "render_fps": 30}
     
-    def __init__(self, num_decks=1, render_mode=None):
+    def __init__(self, num_decks=1, render_mode=None, verbose=True):
         """
         Only need to initialize the game once in the beginning
 
@@ -34,6 +34,9 @@ class Blackjack(Env):
         self.can_move = None
         self.screen = None
         self.illegal_move_reward = -1
+        
+        if not verbose:
+            log.disabled = True
         
         # Gym API
         self.render_mode = render_mode

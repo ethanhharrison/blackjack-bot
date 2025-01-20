@@ -11,6 +11,7 @@ class Agent:
     def __init__(self, name, env):
         self.name = name
         self.env = env
+        self.model = None
         self.actions = []
         self.rewards = []
         
