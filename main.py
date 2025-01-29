@@ -12,10 +12,10 @@ def main():
     agt = NeverBustAgent("never_bust", bj_env)
     # agt = BasicStrategyAgent("basic_strategy", bj_env)
     # agt = PPOAgent("ppo_agent", bj_env)
-    # agt.train(timesteps=200000)
-    # agt.run(load=True, episodes=1000)
-    agt.visualize_policy()
-    # agt.get_metrics()
+    # agt.train(timesteps=400000)
+    agt.run(episodes=10000)
+    # agt.visualize_policy()
+    agt.get_metrics()
     
 if __name__ == "__main__":
     main()

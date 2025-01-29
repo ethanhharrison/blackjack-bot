@@ -263,34 +263,34 @@ class Blackjack(Env):
         """Closes the environment. Used to stop any rendering"""
         pass
     
-# if __name__ == "__main__":
-#     # User play
-#     bj = Blackjack(render_mode="human")
+if __name__ == "__main__":
+    # User play
+    bj = Blackjack(render_mode="human")
     
-#     while True:
-#         bj.reset()
+    while True:
+        bj.reset()
         
-#         print("Dealer's Card:", bj.dealer_hand[0])
+        print("Dealer's Card:", bj.dealer_hand[0])
         
-#         bj.render()
+        bj.render()
         
-#         while not bj.terminated:
-#             bj.render()
-#             print("Your Hand:", bj.player_hand)
-#             print("0 = STAY, 1 = HIT, 2 = DOUBLE")
-#             act = input("Make your move: ")
-#             bj.step(int(act))
+        while not bj.terminated:
+            bj.render()
+            print("Your Hand:", bj.player_hand)
+            print("0 = STAY, 1 = HIT, 2 = DOUBLE")
+            act = input("Make your move: ")
+            bj.step(int(act))
         
-#         bj.render()
-#         print("Your Hand:", bj.player_hand)
-#         print("Dealer's Hand:", bj.dealer_hand) 
+        bj.render()
+        print("Your Hand:", bj.player_hand)
+        print("Dealer's Hand:", bj.dealer_hand) 
             
-#         if bj.reward > 0:
-#             print(f"You won {bj.reward}!")
-#         elif bj.reward == 0:
-#             print("You shoved")
-#         else:
-#             print(f"You lost {bj.reward} :(")
-#         quit = input("Type 'QUIT' to exit the game. Press ENTER to play again.")
-#         if quit:
-#             break
+        if bj.reward > 0:
+            print(f"You won {bj.reward}!")
+        elif bj.reward == 0:
+            print("You shoved")
+        else:
+            print(f"You lost {bj.reward} :(")
+        quit = input("Type 'QUIT' to exit the game. Press ENTER to play again.")
+        if quit:
+            break
